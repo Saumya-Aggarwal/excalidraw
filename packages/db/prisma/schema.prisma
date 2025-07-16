@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  photo     String?
+  chats     Chat[]
+  createdRooms Room[] @relation("RoomCreator")
+  roomMembers RoomMember[]
+}
+
+model Room {
+  id        Int          @id @default(autoincrement())
+  slug      String       @unique
+  name      String
+  createdAt DateTime     @default(now())
+  chats     Chat[]
+  createdBy String
+  creator   User         @relation("RoomCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  members   RoomMember[]
+}
+
+model Chat {
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
+  room      Room     @relation(fields: [roomId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+
+model RoomMember {
+  id       Int      @id @default(autoincrement())
+  roomId   Int
+  userId   String
+  joinedAt DateTime @default(now())
+  
+  // Relations
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Ensure a user can only be in a room once
+  @@unique([roomId, userId])
+}
